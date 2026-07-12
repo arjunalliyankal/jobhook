@@ -146,31 +146,7 @@
         margin-top: 0.15rem;
     }
 
-    .platform-badge {
-        flex-shrink: 0;
-        font-size: 0.7rem;
-        font-weight: 700;
-        padding: 0.18rem 0.55rem;
-        border-radius: 4px;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-    }
 
-    .badge-edx {
-        background: rgba(16, 185, 129, 0.15);
-        color: #10b981;
-    }
-
-    .badge-youtube {
-        background: rgba(239, 68, 68, 0.15);
-        color: #ef4444;
-    }
-
-
-    .badge-default {
-        background: rgba(139, 92, 246, 0.15);
-        color: #c4b5fd;
-    }
 
     .course-img {
         width: 100%;
@@ -232,9 +208,25 @@
 <div class="page-header">
     <div>
         <h1>Course Search</h1>
-        <p>Find courses from edX and YouTube playlists.</p>
+        <p>Find courses.</p>
     </div>
-    <button id="scrape-btn" class="btn btn-primary">🌐 Find Courses</button>
+    <div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;">
+        <button id="saved-courses-btn" class="btn btn-outline" onclick="toggleSavedPanel()">🔖 Saved Courses <span
+                id="saved-count"
+                style="background:var(--primary);color:white;border-radius:999px;padding:0.1rem 0.5rem;font-size:0.75rem;margin-left:0.3rem;display:none;">0</span></button>
+        <button id="scrape-btn" class="btn btn-primary">🌐 Find Courses</button>
+    </div>
+</div>
+
+<!-- Saved Courses Panel -->
+<div id="saved-courses-panel" style="display:none; margin-bottom:1.5rem;">
+    <div class="card" style="padding:1.25rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+            <h3 style="margin:0;font-size:1rem;">🔖 Saved Courses</h3>
+            <button class="btn btn-outline btn-sm" onclick="toggleSavedPanel()">✕ Close</button>
+        </div>
+        <div id="saved-courses-list"></div>
+    </div>
 </div>
 
 <div id="scrape-banner">
@@ -242,17 +234,6 @@
     <span id="scrape-banner-text">Fetching courses… Chrome may open for edX.</span>
 </div>
 
-<div class="toolbar">
-    <input type="text" id="course-search" placeholder="🔍  e.g. Machine Learning, Python, Data Science…" />
-    <button id="search-btn" class="btn btn-outline">Search Saved</button>
-
-    <div class="platform-pills" id="platform-pills">
-        <button class="pill active" data-platform="all">All</button>
-        <button class="pill" data-platform="edx">🟢 edX</button>
-        <button class="pill" data-platform="youtube">🔴 YouTube</button>
-
-    </div>
-</div>
 
 <div id="courses-grid">
     <div class="loading-skeleton" style="height:200px;"></div>
@@ -267,16 +248,6 @@
 
     let activePlatform = "all";
 
-    const BADGE = {
-        edx: { cls: "badge-edx", label: "edX" },
-        youtube: { cls: "badge-youtube", label: "YouTube" },
-    };
-
-    function platformBadge(platform) {
-        const b = BADGE[platform] || { cls: "badge-default", label: platform || "Course" };
-        return `<span class="platform-badge ${b.cls}">${b.label}</span>`;
-    }
-
     function showSkeletons() {
         document.getElementById("courses-grid").innerHTML = `
         <div class="loading-skeleton" style="height:200px;"></div>
@@ -290,12 +261,20 @@
             grid.innerHTML = `
         <div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-muted);">
             <div style="font-size:3rem;margin-bottom:1rem;">🔍</div>
-            <p>No courses found. Try a different keyword and click <strong>Find Courses</strong>.</p>
+            <p>No courses found. Click <strong>Find Courses</strong>.</p>
         </div>`;
             return;
         }
+
+        // Randomize the courses array
+        let shuffled = [...courses];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+
         grid.innerHTML = "";
-        courses.forEach(c => {
+        shuffled.forEach(c => {
             const title = c.title || c.name || "Untitled";
             const provider = c.provider || c.company || "";
             const desc = c.description || "";
@@ -311,7 +290,6 @@
                 <div class="card-title">${title}</div>
                 <div class="card-provider">${provider}</div>
             </div>
-            ${platformBadge(platform)}
         </div>
         ${thumb ? `<img src="${thumb}" class="course-img" alt="thumbnail" loading="lazy" />` : ""}
         ${desc ? `<p class="course-desc">${desc}</p>` : ""}
@@ -338,6 +316,8 @@
     }
 
     // ── Live Scrape ────────────────────────────────────────────────────────────────
+    let currentRole = "Programming";
+
     function showBanner(t) {
         document.getElementById("scrape-banner-text").textContent = t;
         document.getElementById("scrape-banner").classList.add("active");
@@ -345,18 +325,13 @@
     function hideBanner() { document.getElementById("scrape-banner").classList.remove("active"); }
 
     async function triggerScrape() {
-        const keyword = document.getElementById("course-search").value.trim();
-        if (!keyword) { showToast("Enter a keyword first.", "info"); return; }
-
+        const keyword = currentRole;
         const btn = document.getElementById("scrape-btn");
         btn.disabled = true; btn.textContent = "⏳ Fetching…";
 
-        const pills = [...document.querySelectorAll(".pill.active[data-platform]")]
-            .map(p => p.dataset.platform)
-            .filter(p => p !== "all");
-        const platforms = pills.length ? pills : ["edx", "youtube"];
+        const platforms = ["edx", "youtube"];
 
-        showBanner("Fetching courses — Chrome may open briefly for edX…");
+        showBanner(`Fetching courses for "${keyword}" — Chrome may open briefly for edX…`);
         try {
             const res = await API.post("/courses/scrape", { keyword, platforms });
             const data = await res.json();
@@ -365,7 +340,7 @@
                 renderCards(data.courses);
                 showToast(`✅ ${data.count} courses fetched!`);
             } else {
-                showToast("No courses found for this keyword.", "info");
+                showToast("No courses found for this role.", "info");
                 loadCourses(keyword);
             }
         } catch {
@@ -377,38 +352,120 @@
     }
 
     // ── Save ───────────────────────────────────────────────────────────────────────
+    let savedPanelOpen = false;
+
     async function saveCourse(id, btn) {
         if (!id || id === "undefined") { showToast("Cannot save — no ID.", "error"); return; }
         btn.disabled = true; btn.textContent = "Saving…";
         try {
             const res = await API.post("/courses/save", { course_id: id });
-            if (res && res.ok) { showToast("Course saved! 🎉"); btn.textContent = "✅ Saved"; }
-            else { throw new Error(); }
+            if (res && res.ok) {
+                showToast("Course saved! 🎉");
+                btn.textContent = "✅ Saved";
+                await refreshSavedCount();
+                if (savedPanelOpen) await loadSavedCourses();
+            } else {
+                throw new Error();
+            }
         } catch {
             showToast("Error saving.", "error");
             btn.disabled = false; btn.textContent = "🔖 Save";
         }
     }
 
-    // ── Init ───────────────────────────────────────────────────────────────────────
-    document.addEventListener("DOMContentLoaded", () => {
-        loadCourses();
+    async function refreshSavedCount() {
+        try {
+            const res = await API.get("/courses/saved");
+            if (!res || !res.ok) return;
+            const courses = await res.json();
+            const countEl = document.getElementById("saved-count");
+            const n = courses.length;
+            countEl.textContent = n;
+            countEl.style.display = n > 0 ? "inline" : "none";
+        } catch (_) { }
+    }
 
-        document.getElementById("search-btn").addEventListener("click", () =>
-            loadCourses(document.getElementById("course-search").value));
-        document.getElementById("course-search").addEventListener("keydown", e => {
-            if (e.key === "Enter") loadCourses(e.target.value);
-        });
-        document.getElementById("scrape-btn").addEventListener("click", triggerScrape);
+    async function loadSavedCourses() {
+        const listEl = document.getElementById("saved-courses-list");
+        listEl.innerHTML = `<div style="color:var(--text-muted);font-size:0.9rem;padding:1rem 0;">Loading…</div>`;
+        try {
+            const res = await API.get("/courses/saved");
+            if (!res || !res.ok) throw new Error();
+            const courses = await res.json();
+            if (!courses.length) {
+                listEl.innerHTML = `<p style="color:var(--text-muted);text-align:center;padding:1.5rem;">No saved courses yet. Click 🔖 Save on any course card!</p>`;
+                return;
+            }
+            listEl.innerHTML = "";
+            courses.forEach(savedItem => {
+                const c = savedItem.course || {};
+                const title = c.title || c.name || "Unknown Course";
+                const provider = c.provider || c.company || "";
+                const desc = c.description || "";
+                const link = c.link || "#";
+                const platform = c.platform || "default";
+                const thumb = c.thumbnail || null;
 
-        document.querySelectorAll(".pill[data-platform]").forEach(pill => {
-            pill.addEventListener("click", () => {
-                document.querySelectorAll(".pill[data-platform]").forEach(p => p.classList.remove("active"));
-                pill.classList.add("active");
-                activePlatform = pill.dataset.platform;
-                loadCourses(document.getElementById("course-search").value);
+                const card = document.createElement("div");
+                card.style.cssText = "border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem;margin-bottom:0.75rem;background:var(--surface);display:flex;gap:1rem;align-items:flex-start;";
+                card.innerHTML = `
+                    ${thumb ? `<img src="${thumb}" style="width:100px;height:70px;object-fit:cover;border-radius:var(--radius);background:var(--darker);flex-shrink:0;" />` : `<div style="width:100px;height:70px;border-radius:var(--radius);background:var(--darker);flex-shrink:0;"></div>`}
+                    <div style="flex:1;">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;margin-bottom:0.3rem;">
+                            <div>
+                                <div style="font-weight:700;font-size:0.95rem;color:var(--text-main);">${title}</div>
+                                <div style="font-size:0.83rem;color:var(--text-muted);margin-top:0.15rem;">${provider}</div>
+                            </div>
+                            <button class="btn btn-danger btn-sm" onclick="removeSavedCourse('${savedItem._id}', this)" style="flex-shrink:0;">✕ Remove</button>
+                        </div>
+                        ${desc ? `<p style="font-size:0.83rem;color:var(--text-muted);margin:0.4rem 0;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${desc}</p>` : ""}
+                        ${link && link !== "#" ? `<a href="${link}" target="_blank" class="btn btn-ghost" style="margin-top:0.4rem;display:inline-block;font-size:0.8rem;">View Course ↗</a>` : ""}
+                    </div>
+                `;
+                listEl.appendChild(card);
             });
-        });
+        } catch (e) {
+            listEl.innerHTML = `<p style="color:var(--danger);">Error loading saved courses.</p>`;
+        }
+    }
+
+    async function removeSavedCourse(savedId, btn) {
+        btn.disabled = true;
+        try {
+            const res = await API.delete(`/courses/saved/${savedId}`);
+            if (res && res.ok) {
+                showToast("Course removed from saved.");
+                await Promise.all([refreshSavedCount(), loadSavedCourses()]);
+            } else {
+                showToast("Failed to remove course.", "error");
+                btn.disabled = false;
+            }
+        } catch (e) {
+            showToast("Error removing course.", "error");
+            btn.disabled = false;
+        }
+    }
+
+    function toggleSavedPanel() {
+        const panel = document.getElementById("saved-courses-panel");
+        savedPanelOpen = !savedPanelOpen;
+        panel.style.display = savedPanelOpen ? "block" : "none";
+        if (savedPanelOpen) loadSavedCourses();
+    }
+
+    // ── Init ───────────────────────────────────────────────────────────────────────
+    document.addEventListener("DOMContentLoaded", async () => {
+        try {
+            const meRes = await API.get("/auth/me");
+            if (meRes && meRes.ok) {
+                const me = await meRes.json();
+                currentRole = (me.profile || {}).target_role || "Programming";
+            }
+        } catch (_) { }
+
+        loadCourses();
+        refreshSavedCount();
+        document.getElementById("scrape-btn").addEventListener("click", triggerScrape);
     });
 </script>
 {% endblock %}

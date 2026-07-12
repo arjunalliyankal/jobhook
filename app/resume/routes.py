@@ -61,7 +61,7 @@ def upload_resume():
         current_profile = user.get("profile", {})
         
         # Update flat fields unconditionally with parsed data
-        for field in ["phone", "linkedin", "github", "kaggle", "summary", "location", "email", "portfolio"]:
+        for field in ["phone", "linkedin", "summary", "location", "email", "portfolio"]:
             if parsed.get(field):
                 current_profile[field] = parsed[field]
         
@@ -114,6 +114,53 @@ def delete_resume(resume_id):
     user_id = get_jwt_identity()
     resume_model.delete(resume_id, user_id)
     return jsonify({"message": "Resume deleted"}), 200
+
+
+@resume_bp.route("/<resume_id>/set_active", methods=["POST"])
+@jwt_required()
+def set_active_resume(resume_id):
+    """Update User Profile with parsed data from an existing resume."""
+    from ..extensions import mongo
+    from bson import ObjectId
+    user_id = get_jwt_identity()
+    user = user_model.find_by_id(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+        
+    resume = next((r for r in resume_model.get_by_user(user_id) if str(r.get("_id")) == resume_id), None)
+    if not resume:
+        return jsonify({"error": "Resume not found"}), 404
+        
+    parsed = resume.get("parsed", {})
+    current_profile = user.get("profile", {})
+    
+    # Update flat fields unconditionally with parsed data
+    for field in ["phone", "linkedin", "summary", "location", "email", "portfolio"]:
+        if parsed.get(field):
+            current_profile[field] = parsed[field]
+    
+    # Overwrite skills list with parsed skills
+    if parsed.get("skills"):
+        current_profile["skills_list"] = [{"name": s, "level": ""} for s in parsed["skills"]]
+        
+    # Overwrite array fields unconditionally with parsed data
+    for list_field in ["experience", "education", "projects", "internships", "certificates", "miscellaneous"]:
+        if parsed.get(list_field) is not None:
+            current_profile[list_field] = parsed[list_field]
+    
+    user_model.update_profile(user_id, current_profile)
+    
+    update_data = {"$set": {"active_resume_id": ObjectId(resume_id)}}
+    if parsed.get("name"):
+        update_data["$set"]["name"] = parsed["name"]
+        
+    mongo.db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        update_data
+    )
+
+    return jsonify({"message": "Profile updated from resume"}), 200
+
 
 
 @resume_bp.route("/download", methods=["POST"])
@@ -175,15 +222,9 @@ def download_resume_pdf():
 
     contact_parts = [x for x in [p.get("email"), p.get("phone"), p.get("location")] if x]
     links = []
-    if p.get("github"):
-        gh = p["github"].replace("https://", "").replace("www.", "")
-        links.append(f'<a href="{p["github"]}" color="black">{gh}</a>')
     if p.get("linkedin"):
         li = p["linkedin"].replace("https://", "").replace("www.", "")
         links.append(f'<a href="{p["linkedin"]}" color="black">{li}</a>')
-    if p.get("kaggle"):
-        kg = p["kaggle"].replace("https://", "").replace("www.", "")
-        links.append(f'<a href="{p["kaggle"]}" color="black">{kg}</a>')
     
     contact_str = " | ".join(contact_parts)
     if links:

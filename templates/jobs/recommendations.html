@@ -379,9 +379,22 @@
             profile.</p>
     </div>
     <div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;">
-        <button id="recommend-btn" class="btn btn-outline" title="AI-match based on your resume">✨ Get Matches</button>
+        <button id="saved-jobs-btn" class="btn btn-outline" onclick="toggleSavedPanel()">🔖 Saved Jobs <span
+                id="saved-count"
+                style="background:var(--primary);color:white;border-radius:999px;padding:0.1rem 0.5rem;font-size:0.75rem;margin-left:0.3rem;display:none;">0</span></button>
         <button id="scrape-btn" class="btn btn-primary" title="Fetch live jobs from job boards">🌐 Scrape Live
             Jobs</button>
+    </div>
+</div>
+
+<!-- Saved Jobs Panel -->
+<div id="saved-jobs-panel" style="display:none; margin-bottom:1.5rem;">
+    <div class="card" style="padding:1.25rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+            <h3 style="margin:0;font-size:1rem;">🔖 Saved Jobs</h3>
+            <button class="btn btn-outline btn-sm" onclick="toggleSavedPanel()">✕ Close</button>
+        </div>
+        <div id="saved-jobs-list"></div>
     </div>
 </div>
 
@@ -391,17 +404,7 @@
     <span id="scrape-banner-text">Fetching live jobs in the background — results will update automatically…</span>
 </div>
 
-<!-- Toolbar -->
-<div class="toolbar">
-    <input type="text" id="job-search" placeholder="🔍  Search title or keyword…" />
-    <button id="search-btn" class="btn btn-outline">Search</button>
 
-    <div class="platform-pills" id="platform-pills">
-        <button class="pill active" data-platform="all">All</button>
-        <button class="pill" data-platform="naukri">🟠 Naukri</button>
-        <button class="pill" data-platform="simplyhired">🔵 SimplyHired</button>
-    </div>
-</div>
 
 <!-- Jobs grid -->
 <div id="jobs-grid">
@@ -440,9 +443,18 @@
     let activePlatform = "all";
     let pollInterval = null;
     let currentRole = "";
+    let userResumeSkills = []; // Skills from user's active resume
 
     window.jobsData = {};
     let activeModalJobId = null;
+
+    // ── Skill Match Score ───────────────────────────────────────────────────────────
+    function calcMatchScore(jobSkills) {
+        if (!userResumeSkills.length || !jobSkills || !jobSkills.length) return null;
+        const userLower = userResumeSkills.map(s => s.toLowerCase());
+        const matched = jobSkills.filter(s => userLower.includes(s.toLowerCase()));
+        return Math.round((matched.length / jobSkills.length) * 100);
+    }
 
     // ── Render helpers ─────────────────────────────────────────────────────────────
     function platformBadge(platform) {
@@ -461,14 +473,26 @@
             grid.innerHTML = `
             <div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-muted);">
                 <div style="font-size:3rem;margin-bottom:1rem;">🔍</div>
-                <p>No jobs found. Try a different search or click <strong>🌐 Scrape Live Jobs</strong>.</p>
+                <p>No jobs found. Click <strong>🌐 Scrape Live Jobs</strong>.</p>
             </div>`;
             return;
         }
 
+        // Filter 10 jobs from Naukri and 10 from SimplyHired
+        const naukriJobs = jobs.filter(j => j.platform === 'naukri').slice(0, 10);
+        const simplyHiredJobs = jobs.filter(j => j.platform === 'simplyhired').slice(0, 10);
+
+        let processedJobs = [...naukriJobs, ...simplyHiredJobs];
+
+        // Shuffle randomly
+        for (let i = processedJobs.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [processedJobs[i], processedJobs[j]] = [processedJobs[j], processedJobs[i]];
+        }
+
         grid.innerHTML = "";
         window.jobsData = {}; // clear old data
-        jobs.forEach(job => {
+        processedJobs.forEach(job => {
             window.jobsData[job._id] = job;
             const title = job.title || job.name || "Untitled";
             const company = job.company || "";
@@ -477,13 +501,14 @@
             const desc = job.description || "";
             const link = job.link || job.apply_url || "#";
             const platform = job.platform || "db";
-            const skills = (job.required_skills || []).slice(0, 5);
+            const skills = (job.required_skills || []).slice(0, 6);
+            const education = job.education || "";
 
-            const score = job.match_score;
+            const matchScore = calcMatchScore(job.required_skills || []);
             let matchHtml = "";
-            if (score !== undefined) {
-                const cls = score >= 70 ? "match-high" : score >= 40 ? "match-mid" : "match-low";
-                matchHtml = `<span class="match-badge ${cls}">🎯 ${score}% Match</span>`;
+            if (matchScore !== null) {
+                const cls = matchScore >= 70 ? "match-high" : matchScore >= 40 ? "match-mid" : "match-low";
+                matchHtml = `<span class="match-badge ${cls}">🎯 ${matchScore}% Skill Match</span>`;
             }
 
             const skillHtml = skills.map(s => `<span class="job-skill-tag">${s}</span>`).join("");
@@ -505,9 +530,9 @@
             ${matchHtml}
             ${desc ? `<p class="job-desc">${desc}</p>` : ""}
             ${skillHtml ? `<div class="job-skills">${skillHtml}</div>` : ""}
+            ${education ? `<div class="job-education" style="font-size:0.78rem;color:var(--text-muted);margin-top:0.3rem;">🎓 ${education}</div>` : ""}
             <div class="job-actions">
                 <button class="btn btn-primary" onclick="event.stopPropagation(); saveJob('${job._id}', this)">🔖 Save</button>
-                <button class="btn btn-outline" onclick="event.stopPropagation(); autoApply('${job._id}', '${link}', '${platform}', this)">🚀 Auto-Apply</button>
                 <a href="${link}" target="_blank" rel="noopener" class="btn btn-ghost" style="font-size:0.75rem; color:var(--text-muted);" onclick="event.stopPropagation();">View ↗</a>
             </div>`;
             grid.appendChild(card);
@@ -525,7 +550,7 @@
     async function loadJobs(query = "") {
         showSkeletons();
         try {
-            const params = new URLSearchParams({ q: query, platform: activePlatform, limit: 30 });
+            const params = new URLSearchParams({ q: query, platform: "all", limit: 60 });
             const res = await API.get(`/jobs/search?${params}`);
             if (!res || !res.ok) throw new Error("Search failed");
             const jobs = await res.json();
@@ -551,7 +576,7 @@
                 <div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-muted);">
                     <div style="font-size:3rem;margin-bottom:1rem;">⚠️</div>
                     <p>${msg}</p>
-                    ${msg.includes("Upload") ? '<a href="/resume/upload" class="btn btn-primary" style="margin-top:1rem;">Upload Resume</a>' : ""}
+                    ${msg.includes("Upload") ? '<a href="/dashboard" class="btn btn-primary" style="margin-top:1rem;">Upload Resume in Dashboard</a>' : ""}
                 </div>`;
                 return;
             }
@@ -652,11 +677,18 @@
         }
         btn.disabled = true;
         btn.textContent = "Saving…";
+        // Also store full job data for the saved panel
+        const jobData = window.jobsData[jobId];
         try {
             const res = await API.post("/tracker/applications", { job_id: jobId });
             if (res && res.ok) {
-                showToast("Job saved to tracker! 🎉");
+                showToast("Job saved! 🎉");
                 btn.textContent = "✅ Saved";
+                // Update saved panel if open
+                await refreshSavedCount();
+                if (document.getElementById("saved-jobs-panel").style.display !== "none") {
+                    await loadSavedJobs();
+                }
             } else {
                 const err = await res.json().catch(() => ({}));
                 showToast(err.error || "Failed to save job", "error");
@@ -668,6 +700,95 @@
             btn.disabled = false;
             btn.textContent = "🔖 Save";
         }
+    }
+
+    // ── Saved Jobs Panel ───────────────────────────────────────────────────────────
+    let savedPanelOpen = false;
+
+    async function refreshSavedCount() {
+        try {
+            const res = await API.get("/tracker/applications");
+            if (!res || !res.ok) return;
+            const apps = await res.json();
+            const countEl = document.getElementById("saved-count");
+            const n = apps.length;
+            countEl.textContent = n;
+            countEl.style.display = n > 0 ? "inline" : "none";
+        } catch (_) { }
+    }
+
+    async function loadSavedJobs() {
+        const listEl = document.getElementById("saved-jobs-list");
+        listEl.innerHTML = `<div style="color:var(--text-muted);font-size:0.9rem;padding:1rem 0;">Loading…</div>`;
+        try {
+            const res = await API.get("/tracker/applications");
+            if (!res || !res.ok) throw new Error();
+            const apps = await res.json();
+            if (!apps.length) {
+                listEl.innerHTML = `<p style="color:var(--text-muted);text-align:center;padding:1.5rem;">No saved jobs yet. Click 🔖 Save on any job card!</p>`;
+                return;
+            }
+            listEl.innerHTML = "";
+            apps.forEach(app => {
+                // Job data can come from app.job (enriched) or we look it up in jobsData
+                const job = app.job || window.jobsData[app.job_id] || {};
+                const title = job.title || job.name || "Unknown Job";
+                const company = job.company || "";
+                const loc = job.location || "";
+                const salary = job.salary ? `₹${job.salary.toLocaleString("en-IN")}/mo` : (job.salary_text || "");
+                const desc = job.description || "";
+                const link = job.link || job.apply_url || "#";
+                const platform = job.platform || "";
+                const skills = (job.required_skills || []).slice(0, 6);
+                const education = job.education || "";
+                const skillHtml = skills.map(s => `<span class="job-skill-tag">${s}</span>`).join("");
+
+                const card = document.createElement("div");
+                card.style.cssText = "border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem;margin-bottom:0.75rem;background:var(--surface);";
+                card.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;">
+                        <div>
+                            <div style="font-weight:700;font-size:0.95rem;color:var(--text-main);">${title}</div>
+                            ${company ? `<div style="font-size:0.83rem;color:var(--text-muted);margin-top:0.15rem;">${company}</div>` : ""}
+                        </div>
+                        <button class="btn btn-danger btn-sm" onclick="removeSavedJob('${app._id}', this)" style="flex-shrink:0;">✕ Remove</button>
+                    </div>
+                    ${loc ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.4rem;">📍 ${loc}</div>` : ""}
+                    ${salary ? `<div style="font-size:0.78rem;color:#6ee7b7;margin-top:0.2rem;">💰 ${salary}</div>` : ""}
+                    ${desc ? `<p style="font-size:0.83rem;color:var(--text-muted);margin:0.5rem 0;line-height:1.55;max-height:5rem;overflow:hidden;">${desc}</p>` : ""}
+                    ${skillHtml ? `<div class="job-skills" style="margin-top:0.4rem;">${skillHtml}</div>` : ""}
+                    ${education ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.3rem;">🎓 ${education}</div>` : ""}
+                    ${link && link !== "#" ? `<a href="${link}" target="_blank" class="btn btn-ghost" style="margin-top:0.75rem;display:inline-block;font-size:0.8rem;">View Job ↗</a>` : ""}
+                `;
+                listEl.appendChild(card);
+            });
+        } catch (e) {
+            listEl.innerHTML = `<p style="color:var(--danger);">Error loading saved jobs.</p>`;
+        }
+    }
+
+    async function removeSavedJob(appId, btn) {
+        btn.disabled = true;
+        try {
+            const res = await API.delete(`/tracker/applications/${appId}`);
+            if (res && res.ok) {
+                showToast("Job removed from saved.");
+                await Promise.all([refreshSavedCount(), loadSavedJobs()]);
+            } else {
+                showToast("Failed to remove job.", "error");
+                btn.disabled = false;
+            }
+        } catch (e) {
+            showToast("Error removing job.", "error");
+            btn.disabled = false;
+        }
+    }
+
+    function toggleSavedPanel() {
+        const panel = document.getElementById("saved-jobs-panel");
+        savedPanelOpen = !savedPanelOpen;
+        panel.style.display = savedPanelOpen ? "block" : "none";
+        if (savedPanelOpen) loadSavedJobs();
     }
 
     // ── Auto-Apply ─────────────────────────────────────────────────────────────────
@@ -781,35 +902,20 @@
                 const me = await meRes.json();
                 currentRole = (me.profile || {}).target_role || "";
                 document.getElementById("target-role-display").textContent = currentRole || "Any Role";
+                // Load resume skills for match score
+                const skillsList = (me.profile || {}).skills_list || [];
+                userResumeSkills = skillsList.map(s => (typeof s === 'object' ? s.name : s)).filter(Boolean);
             }
         } catch (_) { }
 
         // Initial load — show existing scraped/static jobs
         loadJobs();
+        refreshSavedCount();
 
-        // Search button
-        document.getElementById("search-btn").addEventListener("click", () => {
-            loadJobs(document.getElementById("job-search").value);
-        });
-        document.getElementById("job-search").addEventListener("keydown", e => {
-            if (e.key === "Enter") loadJobs(e.target.value);
-        });
-
-        // Get Matches button
-        document.getElementById("recommend-btn").addEventListener("click", loadRecommendations);
+        // Get Matches button removed
 
         // Scrape button
         document.getElementById("scrape-btn").addEventListener("click", triggerScrape);
-
-        // Platform pills
-        document.querySelectorAll(".pill[data-platform]").forEach(pill => {
-            pill.addEventListener("click", () => {
-                document.querySelectorAll(".pill[data-platform]").forEach(p => p.classList.remove("active"));
-                pill.classList.add("active");
-                activePlatform = pill.dataset.platform;
-                loadJobs(document.getElementById("job-search").value);
-            });
-        });
     });
 </script>
 {% endblock %}

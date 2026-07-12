@@ -14,13 +14,18 @@ def get_applications():
     user_id = get_jwt_identity()
     apps = app_model.get_by_user(user_id)
     
-    # Optionally enrich with job details
     for app in apps:
         if app.get("job_id"):
-            job = mongo.db.jobs.find_one({"_id": ObjectId(app["job_id"])})
-            if job:
-                job["_id"] = str(job["_id"])
-                app["job"] = job
+            try:
+                job = mongo.db.jobs.find_one({"_id": ObjectId(app["job_id"])})
+                if not job:
+                    # Try scraped_jobs collection
+                    job = mongo.db.scraped_jobs.find_one({"_id": ObjectId(app["job_id"])})
+                if job:
+                    job["_id"] = str(job["_id"])
+                    app["job"] = job
+            except Exception:
+                pass
     
     return jsonify(apps), 200
 

@@ -16,7 +16,7 @@ env/
 .vscode/
 .idea/
 
-
+uploads/resumes/
 
 # Temporary files
 temp/

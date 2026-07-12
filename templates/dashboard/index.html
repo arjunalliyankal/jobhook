@@ -12,40 +12,10 @@
         <h1>Welcome back, <span id="user-greeting">there</span> 👋</h1>
         <p>Here's your career progress at a glance.</p>
     </div>
-    <a href="/resume/upload" class="btn btn-primary">⬆ Upload Resume</a>
+    <button id="top-ats-btn" onclick="showUploadForm()" class="btn btn-primary">📊 ATS Score: —</button>
 </div>
 
-<!-- Stats Row -->
-<div class="stats-grid" id="stats-grid">
-    <div class="stat-card">
-        <div class="stat-icon">📄</div>
-        <div class="stat-info">
-            <div class="stat-value" id="stat-resumes">—</div>
-            <div class="stat-label">Resumes</div>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon">📤</div>
-        <div class="stat-info">
-            <div class="stat-value" id="stat-applied">—</div>
-            <div class="stat-label">Applications Sent</div>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon">💬</div>
-        <div class="stat-info">
-            <div class="stat-value" id="stat-interviews">—</div>
-            <div class="stat-label">Interviews</div>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon">📊</div>
-        <div class="stat-info">
-            <div class="stat-value" id="stat-ats">—</div>
-            <div class="stat-label">Avg ATS Score</div>
-        </div>
-    </div>
-</div>
+
 
 <!-- Main grid: Resume Management + Profile -->
 <div class="dashboard-grid">
@@ -84,6 +54,15 @@
                 <div id="resume-view-content"></div>
             </div>
         </div>
+
+        <!-- Resume List Added -->
+        <div class="resume-list" style="margin-top: 2rem; display: none;" id="dashboard-resume-list-container">
+            <div class="section-divider">
+                <h3>Your Resumes</h3>
+                <hr />
+            </div>
+            <div id="dashboard-resume-list" style="display: grid; gap: 1rem;"></div>
+        </div>
     </div>
 
     <!-- Profile Card -->
@@ -116,16 +95,8 @@
                     <div id="profile-phone-val" class="profile-value">—</div>
                 </div>
                 <div class="profile-info-group">
-                    <label>GitHub</label>
-                    <div id="profile-github-val" class="profile-value">—</div>
-                </div>
-                <div class="profile-info-group">
                     <label>LinkedIn</label>
                     <div id="profile-linkedin-val" class="profile-value">—</div>
-                </div>
-                <div class="profile-info-group">
-                    <label>Kaggle</label>
-                    <div id="profile-kaggle-val" class="profile-value">—</div>
                 </div>
                 <div class="profile-info-group" style="grid-column: 1 / -1;">
                     <label>Summary</label>
@@ -213,20 +184,8 @@
                         <input type="text" id="edit-phone" placeholder="+1..." />
                     </div>
                     <div class="auth-form-group" style="margin-bottom: 0.75rem;">
-                        <label for="edit-github">GitHub URL</label>
-                        <input type="url" id="edit-github" placeholder="https://github.com/..." />
-                    </div>
-                    <div class="auth-form-group" style="margin-bottom: 0.75rem;">
                         <label for="edit-linkedin">LinkedIn URL</label>
                         <input type="url" id="edit-linkedin" placeholder="https://linkedin.com/in/..." />
-                    </div>
-                    <div class="auth-form-group" style="margin-bottom: 0.75rem;">
-                        <label for="edit-kaggle">Kaggle URL</label>
-                        <input type="url" id="edit-kaggle" placeholder="https://kaggle.com/..." />
-                    </div>
-                    <div class="auth-form-group" style="margin-bottom: 0.75rem;">
-                        <label for="edit-kaggle">Kaggle URL</label>
-                        <input type="url" id="edit-kaggle" placeholder="https://kaggle.com/..." />
                     </div>
                     <div class="auth-form-group" style="grid-column: 1 / -1; margin-bottom: 0.75rem;">
                         <label for="edit-summary">Summary</label>
@@ -254,7 +213,7 @@
         const storedName = localStorage.getItem("user_name");
         if (storedName) document.getElementById("user-greeting").textContent = storedName.split(" ")[0];
 
-        await Promise.all([loadStats(), loadResumeManagement(), loadUserProfile()]);
+        await Promise.all([loadResumeManagement(), loadUserProfile()]);
 
         // Wire file input
         const fileInput = document.getElementById("resume_file");
@@ -278,24 +237,7 @@
         }
     });
 
-    // ── Stats ─────────────────────────────────────────────────────────────
-    async function loadStats() {
-        try {
-            const [resumeRes, appsRes] = await Promise.all([API.get("/resume/"), API.get("/tracker/applications")]);
-            if (resumeRes && resumeRes.ok) {
-                const resumes = await resumeRes.json();
-                document.getElementById("stat-resumes").textContent = resumes.length;
-            }
-            if (appsRes && appsRes.ok) {
-                const apps = await appsRes.json();
-                document.getElementById("stat-applied").textContent = apps.filter(a => ["applied", "interview", "offer"].includes(a.status)).length;
-                document.getElementById("stat-interviews").textContent = apps.filter(a => a.status === "interview").length;
-                document.getElementById("stat-ats").textContent = apps.length
-                    ? Math.round(apps.reduce((s, a) => s + (a.ats_score || 0), 0) / apps.length) + "%"
-                    : "—";
-            }
-        } catch (e) { console.error("Stats error", e); }
-    }
+
 
     // ── Resume Management Card ────────────────────────────────────────────
     async function loadResumeManagement() {
@@ -303,6 +245,8 @@
             const res = await API.get("/resume/");
             if (!res || !res.ok) return;
             const resumes = await res.json();
+            window._currentResumes = resumes;
+            if (typeof updateTopAtsScore === "function") updateTopAtsScore();
 
             const uploadSection = document.getElementById("resume-upload-section");
             const previewSection = document.getElementById("resume-preview-section");
@@ -310,13 +254,83 @@
             if (resumes.length === 0) {
                 uploadSection.style.display = "block";
                 previewSection.style.display = "none";
+                const listContainer = document.getElementById("dashboard-resume-list-container");
+                if (listContainer) listContainer.style.display = "none";
                 return;
             }
 
             uploadSection.style.display = "none";
             previewSection.style.display = "block";
-            renderResumePreview(resumes[0].parsed, resumes[0]);
+
+            // Render resume list on dashboard
+            const listContainer = document.getElementById("dashboard-resume-list-container");
+            const listContent = document.getElementById("dashboard-resume-list");
+            if (listContainer && listContent) {
+                listContainer.style.display = "block";
+                listContent.innerHTML = "";
+                resumes.forEach(r => {
+                    const skills = r.parsed?.skills?.slice(0, 6).join(", ") || "—";
+                    const name = r.parsed?.name || r.file_name;
+                    const date_raw = (r.created_at && typeof r.created_at === 'object' && r.created_at.$date) ? r.created_at.$date : r.created_at;
+                    const date = date_raw ? new Date(date_raw).toLocaleDateString() : 'Unknown date';
+                    const card = document.createElement("div");
+                    card.className = "resume-card";
+                    card.innerHTML = `
+                        <div class="resume-card-header">
+                            <div>
+                                <h3 class="resume-card-name">${name}</h3>
+                                <p class="resume-card-file">${r.file_name}</p>
+                            </div>
+                            <span class="resume-card-date">${date}</span>
+                        </div>
+                        <div class="resume-card-skills">
+                            <span class="skills-label">Skills:</span> ${skills}
+                        </div>
+                        <div class="resume-card-actions">
+                            ${r.storage_name ? '<a href="/api/resume/view/' + r.storage_name + '" target="_blank" class="btn btn-primary btn-sm">👁️ View Resume</a>' : ''}
+                            <button class="btn btn-outline btn-sm" onclick="setActiveResume('${r._id}', this)">✅ Set as Active</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteResume('${r._id}', this)">🗑 Delete</button>
+                        </div>
+                    `;
+                    listContent.appendChild(card);
+                });
+            }
+
+            _currentParsed = resumes[0].parsed;
+            syncResumePreviewFromProfile();
         } catch (e) { console.error("Resume management error", e); }
+    }
+
+    function updateTopAtsScore() {
+        const topBtn = document.getElementById("top-ats-btn");
+        if (!topBtn || !window._currentResumes || !window._currentResumes.length || !userProfile) return;
+
+        let activeId = userProfile.active_resume_id;
+        if (activeId && typeof activeId === 'object' && activeId.$oid) activeId = activeId.$oid;
+
+        let activeRes = window._currentResumes.find(r => String(r._id) === String(activeId));
+        if (!activeRes) activeRes = window._currentResumes[0];
+
+        if (activeRes && activeRes.ats_scores && activeRes.ats_scores.length > 0) {
+            const scores = activeRes.ats_scores;
+            const avg = scores.reduce((sum, item) => sum + item.score, 0) / scores.length;
+            const atsText = Math.round(avg) + "%";
+            topBtn.innerHTML = `📊 ATS Score: ${atsText}`;
+            topBtn.onclick = null;
+            topBtn.style.cursor = "default";
+
+            const val = parseInt(atsText);
+            if (val >= 70) {
+                topBtn.className = "btn btn-primary";
+                topBtn.style.color = "white";
+            } else if (val >= 40) {
+                topBtn.className = "btn btn-outline";
+                topBtn.style.color = "var(--text-main)";
+            } else {
+                topBtn.className = "btn btn-danger";
+                topBtn.style.color = "white";
+            }
+        }
     }
 
     // Stored parsed data for download
@@ -334,9 +348,7 @@
         // Build contact line
         const contactParts = [p.email, p.phone, p.location].filter(Boolean).join(" &nbsp;·&nbsp; ");
         const links = [
-            p.github ? `<a href="${p.github}" target="_blank" class="resume-link">github.com/${p.github.split('/').pop()}</a>` : '',
-            p.linkedin ? `<a href="${p.linkedin}" target="_blank" class="resume-link">linkedin.com/in/${p.linkedin.split('/').pop()}</a>` : '',
-            p.kaggle ? `<a href="${p.kaggle}" target="_blank" class="resume-link">kaggle.com/${p.kaggle.split('/').pop()}</a>` : ''
+            p.linkedin ? `<a href="${p.linkedin}" target="_blank" class="resume-link">linkedin.com/in/${p.linkedin.split('/').pop()}</a>` : ''
         ].filter(Boolean).join(" &nbsp;|&nbsp; ");
 
         const sectionBlock = (title, content) =>
@@ -448,25 +460,24 @@
             const profile = (userProfile && userProfile.profile) || {};
             const payload = {
                 ..._currentParsed,
-                github: profile.github || _currentParsed.github,
+                name: userProfile.name || _currentParsed.name,
+                email: profile.email || _currentParsed.email,
+                phone: profile.phone || _currentParsed.phone,
+                location: profile.location || _currentParsed.location,
                 linkedin: profile.linkedin || _currentParsed.linkedin,
-                kaggle: profile.kaggle || _currentParsed.kaggle,
+                summary: profile.summary || _currentParsed.summary,
+                education: profile.education || _currentParsed.education,
+                experience: profile.experience || _currentParsed.experience,
+                internships: profile.internships || _currentParsed.internships,
+                projects: profile.projects || _currentParsed.projects,
                 skills_list: profile.skills_list || [],
-                certificates: profile.certificates || [],
-                miscellaneous: profile.miscellaneous || []
+                certificates: profile.certificates || _currentParsed.certificates,
+                miscellaneous: profile.miscellaneous || _currentParsed.miscellaneous
             };
 
-            const token = localStorage.getItem("access_token");
-            const res = await fetch("/api/resume/download", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    ...(token ? { Authorization: `Bearer ${token}` } : {})
-                },
-                body: JSON.stringify({ parsed: payload })
-            });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
+            const res = await API.post("/resume/download", { parsed: payload });
+            if (!res || !res.ok) {
+                const err = res ? await res.json().catch(() => ({})) : {};
                 showToast(err.error || "PDF generation failed", "error");
                 return;
             }
@@ -542,12 +553,8 @@
             document.getElementById("profile-role-val").textContent = profile.target_role || "—";
             document.getElementById("profile-location-val").textContent = profile.location || "—";
             document.getElementById("profile-phone-val").textContent = profile.phone || "—";
-            document.getElementById("profile-github-val").innerHTML = profile.github
-                ? `<a href="${profile.github}" target="_blank">View GitHub</a>` : "—";
             document.getElementById("profile-linkedin-val").innerHTML = profile.linkedin
                 ? `<a href="${profile.linkedin}" target="_blank">View LinkedIn</a>` : "—";
-            document.getElementById("profile-kaggle-val").innerHTML = profile.kaggle
-                ? `<a href="${profile.kaggle}" target="_blank">View Kaggle</a>` : "—";
             document.getElementById("profile-skills-list").innerHTML = (profile.skills_list || []).length > 0
                 ? (profile.skills_list || []).map(s => `<div class="profile-list-item"><strong>${s.name}</strong><span>${s.level || ""}</span></div>`).join("")
                 : `<span style="color:var(--text-muted);font-size:0.85rem;">No skills added.</span>`;
@@ -573,11 +580,12 @@
             document.getElementById("edit-role").value = profile.target_role || "";
             document.getElementById("edit-location").value = profile.location || "";
             document.getElementById("edit-phone").value = profile.phone || "";
-            document.getElementById("edit-github").value = profile.github || "";
             document.getElementById("edit-linkedin").value = profile.linkedin || "";
-            document.getElementById("edit-kaggle").value = profile.kaggle || "";
-            document.getElementById("edit-kaggle").value = profile.kaggle || "";
             document.getElementById("edit-summary").value = profile.summary || "";
+
+            // Sync current profile data to preview section
+            syncResumePreviewFromProfile();
+            if (typeof updateTopAtsScore === "function") updateTopAtsScore();
         } catch (e) { console.error("Profile load error", e); }
     }
 
@@ -639,9 +647,7 @@
         const target_role = document.getElementById("edit-role").value.trim();
         const location = document.getElementById("edit-location").value.trim();
         const phone = document.getElementById("edit-phone").value.trim();
-        const github = document.getElementById("edit-github").value.trim();
         const linkedin = document.getElementById("edit-linkedin").value.trim();
-        const kaggle = document.getElementById("edit-kaggle").value.trim();
         const summary = document.getElementById("edit-summary").value.trim();
 
         try {
@@ -656,7 +662,7 @@
                     name,
                     profile: {
                         ...(userProfile ? userProfile.profile : {}),
-                        target_role, location, phone, github, linkedin, kaggle, summary
+                        target_role, location, phone, linkedin, summary
                     }
                 })
             });
@@ -859,6 +865,48 @@
     // Utility: escape HTML to prevent XSS in oninput values
     function escHtml(str) {
         return String(str).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    // Delete Resume functionality added for dashboard
+    async function deleteResume(resumeId, btn) {
+        if (!confirm("Delete this resume? This cannot be undone.")) return;
+        btn.disabled = true;
+        try {
+            const res = await API.delete(`/resume/${resumeId}`);
+            if (res && res.ok) {
+                showToast("Resume deleted.");
+                await Promise.all([loadResumeManagement(), loadStats()]);
+            } else {
+                showToast("Failed to delete resume.", "error");
+                btn.disabled = false;
+            }
+        } catch (e) {
+            showToast("Error deleting resume.", "error");
+            btn.disabled = false;
+        }
+    }
+
+    // Set Active Resume
+    async function setActiveResume(resumeId, btn) {
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner"></span> Setting...`;
+        try {
+            const res = await API.post(`/resume/${resumeId}/set_active`);
+            if (res && res.ok) {
+                showToast("Profile updated from resume!");
+                await Promise.all([loadUserProfile(), loadResumeManagement()]);
+            } else {
+                showToast("Failed to set active resume.", "error");
+            }
+        } catch (e) {
+            showToast("Error setting active resume.", "error");
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
     }
 </script>
 {% endblock %}

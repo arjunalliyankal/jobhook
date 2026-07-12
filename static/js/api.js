@@ -51,7 +51,7 @@ async function refreshAccessToken() {
             localStorage.setItem("access_token", data.access_token);
             return true;
         }
-    } catch (e) {}
+    } catch (e) { }
     return false;
 }
 
@@ -61,15 +61,22 @@ const API = {
     post: (url, body) => apiFetch(url, { method: "POST", body: JSON.stringify(body) }),
     patch: (url, body) => apiFetch(url, { method: "PATCH", body: JSON.stringify(body) }),
     delete: (url) => apiFetch(url, { method: "DELETE" }),
-    postForm: (url, formData) => {
-        const token = getToken();
-        return fetch(`${API_BASE}${url}`, {
-            method: "POST",
-            body: formData,
-            headers: {
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-        });
+    postForm: async (url, formData) => {
+        let token = getToken();
+        let headers = { ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+        let res = await fetch(`${API_BASE}${url}`, { method: "POST", body: formData, headers });
+        if (res.status === 401) {
+            const refreshed = await refreshAccessToken();
+            if (refreshed) {
+                token = getToken();
+                headers = { ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+                return fetch(`${API_BASE}${url}`, { method: "POST", body: formData, headers });
+            } else {
+                logout();
+                return null;
+            }
+        }
+        return res;
     },
 };
 

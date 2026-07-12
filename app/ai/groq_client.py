@@ -47,19 +47,30 @@ class GroqClient:
             return {"error": "Failed to parse resume", "raw": raw}
 
     def get_resume_suggestions(self, resume_text: str, jd_text: str,
-                                missing_keywords: list, score: int = 0) -> dict:
+                                missing_keywords: list, score: int = 0,
+                                parsed_experience: list = None) -> dict:
+        if parsed_experience is None:
+            parsed_experience = []
+            
         prompt = RESUME_SUGGESTIONS_PROMPT.format(
             resume_text=resume_text[:3000],
             jd_text=jd_text[:2000],
             missing_keywords=", ".join(missing_keywords),
-            score=score
+            score=score,
+            parsed_experience=json.dumps(parsed_experience)
         )
-        raw = self._chat(prompt, json_mode=True)
+        raw = self._chat(prompt, json_mode=True, max_tokens=3000)
         try:
             raw = raw.replace("```json", "").replace("```", "").strip()
             return json.loads(raw)
         except json.JSONDecodeError:
-            return {"improvements": [], "keyword_suggestions": [], "language_upgrades": []}
+            return {
+                "improvements": [], 
+                "keyword_suggestions": [], 
+                "language_upgrades": [],
+                "revised_summary": "",
+                "revised_experience": []
+            }
 
     def generate_cover_letter(self, name: str, role: str, company: str,
                                skills: list, achievements: list, jd_text: str) -> str:

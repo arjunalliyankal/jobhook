@@ -68,15 +68,6 @@ def create_app(config_name="development"):
         from flask import render_template
         return render_template("auth/register.html")
 
-    @app.route("/resume")
-    def resume_redirect():
-        from flask import redirect
-        return redirect("/resume/upload")
-
-    @app.route("/resume/upload")
-    def resume_upload():
-        from flask import render_template
-        return render_template("resume/upload.html")
 
     @app.route("/tracker")
     def tracker():

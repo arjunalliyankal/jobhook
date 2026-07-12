@@ -33,6 +33,8 @@ Your task:
 1. List 5 specific, actionable bullet-point improvements to the resume
 2. Suggest how to naturally incorporate the missing keywords
 3. Identify any weak language and suggest stronger alternatives
+4. Rewrite the candidate's professional summary to naturally embed the missing keywords
+5. Rewrite the candidate's experience bullet points to be stronger and include the missing keywords. IMPORTANT: Keep the exact same companies and titles as the original experience array provided.
 
 Job Description:
 {jd_text}
@@ -40,11 +42,16 @@ Job Description:
 Resume Text:
 {resume_text}
 
+Original Experience Array (refer to this for rewriting):
+{parsed_experience}
+
 Return a structured JSON:
 {{
   "improvements": [],
   "keyword_suggestions": [],
-  "language_upgrades": []
+  "language_upgrades": [],
+  "revised_summary": "",
+  "revised_experience": [{{"company": "", "title": "", "location": "", "start": "", "end": "", "bullets": []}}]
 }}
 """
 
