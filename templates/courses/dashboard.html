@@ -57,14 +57,14 @@
     }
 
     .pill:hover {
-        border-color: rgba(139, 92, 246, 0.5);
+        border-color: var(--primary);
         color: var(--text-main);
     }
 
     .pill.active {
-        background: rgba(139, 92, 246, 0.18);
-        border-color: rgba(139, 92, 246, 0.6);
-        color: #c4b5fd;
+        background: var(--primary-light);
+        border-color: var(--primary);
+        color: var(--primary-deep, #52796F);
     }
 
     /* ── Banner ──────────────────────────────────────────────── */
@@ -74,11 +74,11 @@
         gap: 0.75rem;
         padding: 0.85rem 1.25rem;
         border-radius: var(--radius-lg);
-        background: rgba(139, 92, 246, 0.1);
-        border: 1px solid rgba(139, 92, 246, 0.3);
+        background: var(--primary-light);
+        border: 1px solid rgba(73, 105, 77, 0.3);
         margin-bottom: 1.25rem;
         font-size: 0.88rem;
-        color: #c4b5fd;
+        color: var(--primary-deep, #52796F);
     }
 
     #scrape-banner.active {
@@ -88,8 +88,8 @@
     .spinner {
         width: 18px;
         height: 18px;
-        border: 2px solid rgba(139, 92, 246, 0.3);
-        border-top-color: #a78bfa;
+        border: 2px solid rgba(73, 105, 77, 0.3);
+        border-top-color: var(--primary);
         border-radius: 50%;
         animation: spin 0.8s linear infinite;
         flex-shrink: 0;
@@ -110,7 +110,6 @@
 
     .course-card {
         background: var(--surface);
-        backdrop-filter: var(--glass-blur);
         border: 1px solid var(--border);
         border-radius: var(--radius-lg);
         padding: 1.4rem;
@@ -118,12 +117,13 @@
         flex-direction: column;
         gap: 0.6rem;
         transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+        box-shadow: var(--shadow-sm);
     }
 
     .course-card:hover {
-        border-color: rgba(139, 92, 246, 0.5);
+        border-color: var(--primary);
         transform: translateY(-3px);
-        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+        box-shadow: var(--shadow-hover);
     }
 
     .card-top {
@@ -153,7 +153,7 @@
         height: 140px;
         object-fit: cover;
         border-radius: var(--radius);
-        background: var(--darker);
+        background: var(--accent, #CAD2C5);
     }
 
     .course-desc {
@@ -208,7 +208,7 @@
 <div class="page-header">
     <div>
         <h1>Course Search</h1>
-        <p>Find courses.</p>
+        <p id="page-subtitle">Loading courses for your target role…</p>
     </div>
     <div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;">
         <button id="saved-courses-btn" class="btn btn-outline" onclick="toggleSavedPanel()">🔖 Saved Courses <span
@@ -316,7 +316,8 @@
     }
 
     // ── Live Scrape ────────────────────────────────────────────────────────────────
-    let currentRole = "Programming";
+    // currentRole is set from /auth/me on init — used by loadCourses & triggerScrape
+    let currentRole = "";
 
     function showBanner(t) {
         document.getElementById("scrape-banner-text").textContent = t;
@@ -455,17 +456,43 @@
 
     // ── Init ───────────────────────────────────────────────────────────────────────
     document.addEventListener("DOMContentLoaded", async () => {
+        // Fetch the user's target role from the server
         try {
             const meRes = await API.get("/auth/me");
             if (meRes && meRes.ok) {
                 const me = await meRes.json();
-                currentRole = (me.profile || {}).target_role || "Programming";
+                // Assign to the outer-scoped currentRole so triggerScrape() picks it up
+                currentRole = (me.profile || {}).target_role || "";
             }
         } catch (_) { }
 
-        loadCourses();
         refreshSavedCount();
-        document.getElementById("scrape-btn").addEventListener("click", triggerScrape);
+
+        if (currentRole) {
+            document.getElementById("page-subtitle").textContent =
+                `Showing courses for "${currentRole}" — your target role.`;
+            loadCourses(currentRole);
+        } else {
+            document.getElementById("page-subtitle").textContent =
+                "Set a target role in your profile to get personalized recommendations.";
+            document.getElementById("courses-grid").innerHTML = `
+                <div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-muted);">
+                    <div style="font-size:3rem;margin-bottom:1rem;">🎯</div>
+                    <p>You haven't set a <strong>Target Role</strong> yet.</p>
+                    <p style="font-size:0.88rem;margin-top:0.4rem;">Update it in your profile and we'll show personalized courses here.</p>
+                    <a href="/dashboard" class="btn btn-primary" style="margin-top:1rem;">Set Target Role</a>
+                </div>
+            `;
+        }
+
+        // "Find Courses" button uses the target role to scrape fresh results
+        document.getElementById("scrape-btn").addEventListener("click", () => {
+            if (!currentRole) {
+                showToast("Please set your target role in your profile first.", "info");
+                return;
+            }
+            triggerScrape();
+        });
     });
 </script>
 {% endblock %}

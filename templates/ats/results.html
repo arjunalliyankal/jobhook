@@ -7,15 +7,15 @@
 {% endblock %}
 
 {% block content %}
-<div style="max-width:960px;margin:0 auto;">
+<div style="max-width:1200px;margin:0 auto;">
     <div style="margin-bottom:2rem;">
         <h1 style="margin-bottom:0.25rem;">📊 ATS Score Analyzer</h1>
         <p>Paste a job description to see how well your resume matches — and get AI-powered suggestions.</p>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start;">
+    <div style="display:grid;grid-template-columns:350px 1fr;gap:2rem;align-items:start;">
         <!-- Left: Inputs -->
-        <div class="card">
+        <div class="card" style="position: sticky; top: 2rem;">
             <h2 style="font-size:1rem;margin-bottom:1.5rem;">Configure Analysis</h2>
 
             <div style="margin-bottom:1.25rem;">
@@ -27,7 +27,7 @@
 
             <div style="margin-bottom:1.5rem;">
                 <label for="jd-input">Job Description</label>
-                <textarea id="jd-input" rows="12" placeholder="Paste the full job description here..."></textarea>
+                <textarea id="jd-input" rows="18" placeholder="Paste the full job description here..."></textarea>
             </div>
 
             <button id="score-btn" class="btn btn-primary" style="width:100%;">
@@ -55,27 +55,58 @@
 
             <!-- Keywords (shown after scoring) -->
             <div id="keywords-section" style="display:none;">
-                <div class="card" style="margin-bottom:1.25rem;">
-                    <h4 style="color:var(--success);margin-bottom:0.75rem;">✅ Matched Keywords</h4>
-                    <div id="matched-keywords"></div>
-                </div>
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; align-items: stretch;">
+                    
+                    <div class="card" style="margin:0; height:100%;">
+                        <h4 style="color:var(--success);margin-bottom:0.75rem;">✅ Matched Keywords</h4>
+                        <div id="matched-keywords"></div>
+                    </div>
 
-                <div class="card" style="margin-bottom:1.25rem;">
-                    <h4 style="color:var(--danger);margin-bottom:0.75rem;">❌ Missing Keywords</h4>
-                    <div id="missing-keywords"></div>
-                </div>
+                    <div class="card" style="margin:0; height:100%;">
+                        <h4 style="color:var(--danger);margin-bottom:0.75rem;">❌ Missing Keywords</h4>
+                        <div id="missing-keywords"></div>
+                    </div>
 
-                <div class="card" style="margin-bottom:1.25rem;">
-                    <h4 style="margin-bottom:0.75rem;">🛠 Skill Gap Analysis</h4>
-                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.5rem;">Skills you have:</p>
-                    <div id="skill-gap-matched" style="margin-bottom:0.75rem;"></div>
-                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.5rem;">Skills to learn:</p>
-                    <div id="skill-gap-missing"></div>
-                </div>
+                    <div class="card" style="margin:0; height:100%;">
+                        <h4 style="margin-bottom:0.75rem;">🛠 Skill Gap Analysis</h4>
+                        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.5rem;">Skills you have:</p>
+                        <div id="skill-gap-matched" style="margin-bottom:0.75rem;"></div>
+                        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.5rem;">Skills to learn:</p>
+                        <div id="skill-gap-missing"></div>
+                    </div>
 
-                <div class="card">
-                    <h4 style="color:var(--primary);margin-bottom:0.75rem;">💡 AI Suggestions</h4>
-                    <div id="ai-suggestions"></div>
+                    <div class="card" id="proposed-changes-card" style="margin:0; display:none; grid-column: 1 / -1;">
+                        <h4 style="color:var(--primary);margin-bottom:0.75rem;">📋 Proposed Profile Changes</h4>
+                        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1rem;">
+                            These updates can be applied directly to your resume and profile to improve your ATS score.
+                        </p>
+                        
+                        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+                            <div>
+                                <h5 style="margin-bottom:0.25rem;font-size:0.9rem;">Revised Summary</h5>
+                                <div id="proposed-summary" style="font-size:0.85rem; padding:0.5rem; background:var(--surface-alt); border-radius:4px; border: 1px solid var(--border); height:100%;"></div>
+                            </div>
+                            
+                            <div>
+                                <h5 style="margin-bottom:0.25rem;font-size:0.9rem;">Revised Experience</h5>
+                                <div id="proposed-experience" style="font-size:0.85rem; padding:0.5rem; background:var(--surface-alt); border-radius:4px; border: 1px solid var(--border); max-height:250px; overflow-y:auto; height:100%;"></div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:1.5rem; margin-bottom:1.5rem;">
+                            <h5 style="margin-bottom:0.25rem;font-size:0.9rem;">Skills to Add</h5>
+                            <div id="proposed-skills"></div>
+                        </div>
+                        
+                        <button id="apply-changes-btn" class="btn btn-primary" style="width:100%;">
+                            ✅ Apply Changes to Resume
+                        </button>
+                    </div>
+
+                    <div class="card" style="margin:0; grid-column: 1 / -1;">
+                        <h4 style="color:var(--primary);margin-bottom:0.75rem;">💡 AI Suggestions</h4>
+                        <div id="ai-suggestions"></div>
+                    </div>
                 </div>
             </div>
         </div>

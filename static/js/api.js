@@ -91,7 +91,15 @@ function logout() {
 function requireAuth() {
     if (!getToken()) {
         window.location.href = "/auth/login";
+        return;
     }
+    // Verify the user still exists in the DB (handles deleted users)
+    // We call /auth/me and if it returns 401 or 404, force logout.
+    apiFetch("/auth/me").then(res => {
+        if (!res || res.status === 401 || res.status === 404) {
+            logout();
+        }
+    }).catch(() => {});
 }
 
 // Show a toast notification

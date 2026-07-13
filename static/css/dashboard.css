@@ -1,7 +1,9 @@
 /* ============================================================
-   dashboard.css — Dashboard stats, quick actions, activity feed
+   dashboard.css — Sage Green + Graphite Premium Dashboard
+   Stats, quick actions, activity feed, resume doc view
    ============================================================ */
 
+/* ── Dashboard Header ──────────────────────────── */
 .dashboard-header {
     display: flex;
     justify-content: space-between;
@@ -12,60 +14,59 @@
 }
 
 .dashboard-header h1 {
-    font-size: 2rem;
+    font-size: 1.9rem;
     font-weight: 800;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.3rem;
+    letter-spacing: -0.02em;
+    color: var(--text-main);
 }
 
 .dashboard-header h1 span {
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: var(--primary-deep);
 }
 
 .dashboard-header p {
     color: var(--text-muted);
-    font-size: 1rem;
+    font-size: 0.95rem;
 }
 
-/* Stats grid */
+/* ── Stats Grid ──────────────────────────────────── */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
     gap: 1.25rem;
     margin-bottom: 2.5rem;
 }
 
 .stat-card {
     background: var(--surface);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: 1.5rem;
     display: flex;
     align-items: center;
     gap: 1rem;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
     position: relative;
     overflow: hidden;
+    box-shadow: var(--shadow-sm);
 }
 
 .stat-card::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--primary);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity var(--transition);
 }
 
 .stat-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-hover);
+    border-color: var(--accent);
 }
 
 .stat-card:hover::before {
@@ -73,32 +74,35 @@
 }
 
 .stat-icon {
-    font-size: 2rem;
-    width: 56px;
-    height: 56px;
+    font-size: 1.75rem;
+    width: 52px; height: 52px;
     background: var(--primary-light);
     border-radius: var(--radius);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    border: 1px solid rgba(73, 105, 77, 0.2);
 }
 
 .stat-info .stat-value {
-    font-size: 2rem;
+    font-size: 1.9rem;
     font-weight: 800;
     color: var(--text-main);
     line-height: 1;
     margin-bottom: 0.25rem;
+    letter-spacing: -0.02em;
 }
 
 .stat-info .stat-label {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     color: var(--text-muted);
     font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
-/* Dashboard two-column layout */
+/* ── Dashboard Two-Column Layout ─────────────────── */
 .dashboard-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -107,84 +111,105 @@
 }
 
 @media (max-width: 900px) {
-    .dashboard-grid {
-        grid-template-columns: 1fr;
-    }
+    .dashboard-grid { grid-template-columns: 1fr; }
 }
 
+/* ── Section Title ─────────────────────────────── */
 .dash-section-title {
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 700;
     color: var(--text-main);
     margin-bottom: 1.25rem;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
-/* Recent application mini-cards */
+.dash-section-title::before {
+    content: '';
+    display: block;
+    width: 3px;
+    height: 0.9em;
+    background: var(--primary);
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+/* ── Recent Application Mini-Cards ──────────────── */
 .app-mini-card {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0.85rem 1rem;
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--surface-alt);
     border-radius: var(--radius);
     margin-bottom: 0.6rem;
     border: 1px solid var(--border);
-    transition: border-color 0.2s;
+    transition: border-color var(--transition), background var(--transition);
 }
 
 .app-mini-card:hover {
     border-color: var(--primary);
+    background: var(--primary-light);
 }
 
 .app-mini-info strong {
     display: block;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
+    font-weight: 600;
     color: var(--text-main);
+    margin-bottom: 0.1rem;
 }
 
 .app-mini-info span {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     color: var(--text-muted);
 }
 
+/* ── Status Badges ───────────────────────────────── */
 .status-badge {
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 0.25rem 0.6rem;
-    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.22rem 0.65rem;
+    border-radius: var(--radius-full);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
 }
 
 .status-saved {
-    background: rgba(139, 92, 246, 0.2);
-    color: #c4b5fd;
+    background: var(--primary-light);
+    color: var(--primary-deep);
+    border: 1px solid rgba(73, 105, 77, 0.25);
 }
 
 .status-applied {
-    background: rgba(6, 182, 212, 0.2);
-    color: #67e8f9;
+    background: rgba(47, 62, 70, 0.09);
+    color: #2F3E46;
+    border: 1px solid rgba(47, 62, 70, 0.2);
 }
 
 .status-interview {
-    background: rgba(245, 158, 11, 0.2);
-    color: #fcd34d;
+    background: var(--warning-light);
+    color: #92400E;
+    border: 1px solid rgba(245, 158, 11, 0.25);
 }
 
 .status-offer {
-    background: rgba(16, 185, 129, 0.2);
-    color: #6ee7b7;
+    background: var(--success-light);
+    color: #166534;
+    border: 1px solid rgba(34, 197, 94, 0.25);
 }
 
 .status-rejected {
-    background: rgba(239, 68, 68, 0.2);
-    color: #fca5a5;
+    background: var(--danger-light);
+    color: #991B1B;
+    border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
-/* Quick actions */
+/* ── Quick Actions ───────────────────────────────── */
 .quick-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -195,17 +220,17 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
-    padding: 1.2rem 1rem;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--border);
+    gap: 0.45rem;
+    padding: 1.1rem 0.75rem;
+    background: var(--surface-alt);
+    border: 1.5px solid var(--border);
     border-radius: var(--radius);
     color: var(--text-main);
     text-decoration: none;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 600;
     text-align: center;
-    transition: all 0.25s ease;
+    transition: all var(--transition);
     font-family: var(--font);
     cursor: pointer;
 }
@@ -213,41 +238,46 @@
 .quick-action-btn:hover {
     border-color: var(--primary);
     background: var(--primary-light);
+    color: var(--primary-deep);
     transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
 }
 
 .quick-action-btn .qa-icon {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
 }
 
-/* Resume status in dashboard */
+/* ── Resume Status in Dashboard ─────────────────── */
 .resume-status-card {
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1rem;
-    background: rgba(0, 0, 0, 0.2);
+    padding: 0.9rem 1rem;
+    background: var(--surface-alt);
     border-radius: var(--radius);
     border: 1px solid var(--border);
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.7rem;
+    transition: border-color var(--transition);
 }
 
-.resume-status-card .rs-icon {
-    font-size: 1.8rem;
-}
+.resume-status-card:hover { border-color: var(--primary); }
+
+.resume-status-card .rs-icon { font-size: 1.7rem; }
 
 .resume-status-card .rs-info strong {
     display: block;
     color: var(--text-main);
-    font-size: 0.9rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.1rem;
 }
 
 .resume-status-card .rs-info span {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     color: var(--text-muted);
 }
 
-/* Welcome/empty state */
+/* ── Welcome / Empty State ───────────────────────── */
 .empty-state {
     text-align: center;
     padding: 2rem 1rem;
@@ -258,14 +288,16 @@
     font-size: 2.5rem;
     margin-bottom: 0.75rem;
     display: block;
+    filter: grayscale(0.3);
 }
 
 .empty-state p {
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     margin-bottom: 1rem;
+    color: var(--text-muted);
 }
 
-/* User Profile Section */
+/* ── User Profile Section ────────────────────────── */
 #profile-view {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -273,22 +305,23 @@
 }
 
 .profile-info-group {
-    background: rgba(0, 0, 0, 0.15);
-    padding: 0.6rem 0.8rem;
+    background: var(--surface-alt);
+    padding: 0.65rem 0.9rem;
     border-radius: var(--radius);
     border: 1px solid var(--border);
 }
 
 .profile-info-group label {
-    margin-bottom: 0.15rem;
-    font-size: 0.75rem;
+    margin-bottom: 0.2rem;
+    font-size: 0.72rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    color: var(--text-subtle);
+    font-weight: 600;
 }
 
 .profile-value {
-    font-size: 0.95rem;
+    font-size: 0.92rem;
     color: var(--text-main);
     font-weight: 500;
 }
@@ -300,53 +333,51 @@
 }
 
 @media (max-width: 480px) {
-
     #profile-view,
-    .profile-form-grid {
-        grid-template-columns: 1fr;
-    }
+    .profile-form-grid { grid-template-columns: 1fr; }
 }
 
-.profile-expand-section {
-    margin-top: 1.5rem;
-}
+.profile-expand-section { margin-top: 1.5rem; }
 
 .profile-expand-section details {
-    background: rgba(0, 0, 0, 0.15);
+    background: var(--surface-alt);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 0.5rem 1rem;
     margin-bottom: 0.75rem;
+    transition: border-color var(--transition);
+}
+
+.profile-expand-section details[open] {
+    border-color: var(--primary);
 }
 
 .profile-expand-section summary {
     font-weight: 700;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     color: var(--text-main);
     display: flex;
     align-items: center;
     list-style: none;
-    /* Hide default arrow */
+    padding: 0.25rem 0;
 }
 
-.profile-expand-section summary::-webkit-details-marker {
-    display: none;
-}
+.profile-expand-section summary::-webkit-details-marker { display: none; }
 
 .profile-expand-section summary::before {
     content: '▸';
     margin-right: 0.5rem;
     transition: transform 0.2s;
+    color: var(--primary);
+    font-size: 0.8rem;
 }
 
 .profile-expand-section details[open] summary::before {
     transform: rotate(90deg);
 }
 
-.profile-list-view {
-    padding-top: 0.75rem;
-}
+.profile-list-view { padding-top: 0.75rem; }
 
 .profile-list-item {
     padding: 0.6rem 0;
@@ -355,14 +386,13 @@
     color: var(--text-muted);
 }
 
-.profile-list-item:last-child {
-    border-bottom: none;
-}
+.profile-list-item:last-child { border-bottom: none; }
 
 .profile-list-item strong {
     color: var(--text-main);
     display: block;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
+    margin-bottom: 0.15rem;
 }
 
 .profile-list-item span {
@@ -375,23 +405,19 @@
     padding-left: 1.2rem;
 }
 
-.profile-list-item li {
-    margin-bottom: 0.2rem;
-}
+.profile-list-item li { margin-bottom: 0.2rem; }
 
 #profile-view a {
-    color: var(--primary);
+    color: var(--primary-deep);
     text-decoration: none;
     font-weight: 500;
 }
 
-#profile-view a:hover {
-    text-decoration: underline;
-}
+#profile-view a:hover { text-decoration: underline; }
 
-/* Resume upload drop zone */
+/* ── Resume Upload Drop Zone ─────────────────────── */
 #upload-drop-zone {
-    transition: border-color 0.2s, background 0.2s;
+    transition: border-color var(--transition), background var(--transition);
 }
 
 #upload-drop-zone:hover {
@@ -399,41 +425,32 @@
     background: var(--primary-light);
 }
 
-/* Resume preview scrollbar */
+/* ── Resume Preview Scrollbar ────────────────────── */
 #resume-preview-section {
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
 }
 
-#resume-preview-section::-webkit-scrollbar {
-    width: 5px;
-}
+#resume-preview-section::-webkit-scrollbar { width: 5px; }
+#resume-preview-section::-webkit-scrollbar-track { background: transparent; }
+#resume-preview-section::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
 
-#resume-preview-section::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-#resume-preview-section::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 3px;
-}
-
-/* Small button variant */
+/* ── Small Button Variant ────────────────────────── */
 .btn-sm {
-    padding: 0.25rem 0.6rem !important;
+    padding: 0.3rem 0.65rem !important;
     font-size: 0.78rem !important;
-    border-radius: var(--radius);
+    border-radius: var(--radius) !important;
 }
 
-/* Section edit modal */
+/* ── Section Edit Modal ──────────────────────────── */
 #section-edit-modal textarea {
     width: 100%;
     box-sizing: border-box;
     font-family: var(--font);
     font-size: 0.88rem;
-    padding: 0.5rem 0.75rem;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--border);
+    padding: 0.6rem 0.85rem;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
     border-radius: var(--radius);
     color: var(--text-main);
     resize: vertical;
@@ -446,28 +463,19 @@
 }
 
 /* ═══════════════════════════════════════════════
-   Resume document paper view
+   Resume Document Paper View
 ═══════════════════════════════════════════════ */
 .resume-doc-paper {
     max-height: 560px;
     overflow-y: auto;
     scrollbar-width: thin;
-    scrollbar-color: var(--border) transparent;
+    scrollbar-color: var(--accent) transparent;
     padding-right: 0.25rem;
 }
 
-.resume-doc-paper::-webkit-scrollbar {
-    width: 5px;
-}
-
-.resume-doc-paper::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.resume-doc-paper::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 3px;
-}
+.resume-doc-paper::-webkit-scrollbar { width: 5px; }
+.resume-doc-paper::-webkit-scrollbar-track { background: transparent; }
+.resume-doc-paper::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
 
 .resume-doc-body {
     font-family: var(--font);
@@ -504,28 +512,24 @@
 }
 
 .resume-link {
-    color: var(--primary);
+    color: var(--primary-deep);
     font-size: 0.8rem;
     text-decoration: none;
     font-weight: 500;
-    transition: opacity 0.2s;
+    transition: opacity var(--transition);
 }
 
-.resume-link:hover {
-    opacity: 0.75;
-}
+.resume-link:hover { opacity: 0.75; }
 
 /* Section */
-.resume-section {
-    margin-bottom: 1.25rem;
-}
+.resume-section { margin-bottom: 1.25rem; }
 
 .resume-section-title {
     font-size: 0.68rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: var(--primary);
+    color: var(--primary-deep);
     margin-bottom: 0.4rem;
 }
 
@@ -538,7 +542,7 @@
 .resume-summary {
     font-size: 0.87rem;
     color: var(--text-muted);
-    line-height: 1.6;
+    line-height: 1.65;
     margin: 0;
 }
 
@@ -551,12 +555,12 @@
 
 .resume-skill-badge {
     background: var(--primary-light);
-    color: var(--primary);
-    padding: 0.18rem 0.6rem;
-    border-radius: 999px;
+    color: var(--primary-deep);
+    padding: 0.2rem 0.65rem;
+    border-radius: var(--radius-full);
     font-size: 0.78rem;
     font-weight: 500;
-    border: 1px solid rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(73, 105, 77, 0.25);
 }
 
 /* Entry blocks */
@@ -570,10 +574,8 @@
 .resume-entry::before {
     content: '';
     position: absolute;
-    left: -4px;
-    top: 0.45rem;
-    width: 6px;
-    height: 6px;
+    left: -4px; top: 0.45rem;
+    width: 6px; height: 6px;
     background: var(--primary);
     border-radius: 50%;
 }
@@ -594,7 +596,7 @@
 
 .resume-entry-date {
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: var(--text-subtle);
     white-space: nowrap;
 }
 
@@ -606,7 +608,7 @@
 
 .resume-entry-tech {
     font-size: 0.75rem;
-    color: var(--primary);
+    color: var(--primary-deep);
     font-weight: 500;
 }
 
@@ -614,7 +616,7 @@
     font-size: 0.84rem;
     color: var(--text-muted);
     margin: 0.2rem 0 0;
-    line-height: 1.5;
+    line-height: 1.55;
 }
 
 .resume-bullets {
@@ -624,9 +626,7 @@
     font-size: 0.82rem;
 }
 
-.resume-bullets li {
-    margin-bottom: 0.18rem;
-}
+.resume-bullets li { margin-bottom: 0.18rem; }
 
 .resume-entry-cert {
     font-size: 0.85rem;

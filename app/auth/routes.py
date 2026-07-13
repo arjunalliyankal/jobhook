@@ -72,6 +72,10 @@ def login():
 @jwt_required(refresh=True)
 def refresh():
     identity = get_jwt_identity()
+    # Verify user still exists in DB before issuing a new token
+    user = users.find_by_id(identity)
+    if not user:
+        return jsonify({"error": "User account no longer exists"}), 401
     access_token = create_access_token(identity=identity)
     return jsonify({"access_token": access_token}), 200
 

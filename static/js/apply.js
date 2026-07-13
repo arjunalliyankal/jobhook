@@ -79,7 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 <div class="status-icon">🚀</div>
                                 <h3>Application Submitted!</h3>
                                 <p>${data.message}</p>
-                                <a href="/tracker" class="btn btn-primary" style="margin-top:1rem;">View Tracker →</a>
+                                <button onclick="window.location.reload()" class="btn btn-outline" style="margin-top:1rem;">Close</button>
                             </div>
                         `;
                     }
