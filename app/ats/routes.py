@@ -46,38 +46,7 @@ def score():
         parsed_experience=parsed_exp
     )
 
-    # --- AUTOMATIC PROFILE UPDATE ---
-    user_doc = user_model.find_by_id(user_id)
-    if user_doc and "profile" in user_doc:
-        profile = user_doc["profile"]
-        
-        # 1. Update summary if revised
-        if suggestions.get("revised_summary"):
-            profile["summary"] = suggestions["revised_summary"]
-            
-        # 2. Update experience if revised
-        if suggestions.get("revised_experience") and isinstance(suggestions["revised_experience"], list):
-            profile["experience"] = suggestions["revised_experience"]
-            
-        # 3. Add missing keywords to skills list
-        current_skills = profile.get("skills", [])
-        for kw in ats_result.get("missing_keywords", []):
-            if kw not in current_skills:
-                current_skills.append(kw)
-        profile["skills"] = current_skills
-        
-        user_model.update_profile(user_id, profile)
-        
-        # Sync back to the active resume document too so next time we calculate ATS or view it, it's fresh
-        resume_model.collection.update_one(
-            {"_id": resume["_id"]},
-            {"$set": {
-                "parsed.summary": profile.get("summary", ""),
-                "parsed.experience": profile.get("experience", []),
-                "parsed.skills": profile.get("skills", [])
-            }}
-        )
-    # ---------------------------------
+
 
     # Save ATS history to resume
     resume_model.add_ats_score(resume_id, {
@@ -92,3 +61,53 @@ def score():
         "skill_gap": gap_result,
         "suggestions": suggestions
     }), 200
+
+
+@ats_bp.route("/apply-changes", methods=["POST"])
+@jwt_required()
+def apply_changes():
+    user_id = get_jwt_identity()
+    data = request.get_json()
+
+    resume_id = data.get("resume_id")
+    revised_summary = data.get("revised_summary")
+    revised_experience = data.get("revised_experience")
+    missing_keywords = data.get("missing_keywords", [])
+
+    if not resume_id:
+        return jsonify({"error": "resume_id is required"}), 400
+
+    resume = resume_model.get_by_id(resume_id)
+    if not resume:
+        return jsonify({"error": "Resume not found"}), 404
+
+    user_doc = user_model.find_by_id(user_id)
+    if not user_doc or "profile" not in user_doc:
+        return jsonify({"error": "User profile not found"}), 404
+
+    profile = user_doc["profile"]
+
+    if revised_summary:
+        profile["summary"] = revised_summary
+
+    if revised_experience and isinstance(revised_experience, list):
+        profile["experience"] = revised_experience
+
+    current_skills = profile.get("skills", [])
+    for kw in missing_keywords:
+        if kw not in current_skills:
+            current_skills.append(kw)
+    profile["skills"] = current_skills
+
+    user_model.update_profile(user_id, profile)
+
+    resume_model.collection.update_one(
+        {"_id": resume["_id"]},
+        {"$set": {
+            "parsed.summary": profile.get("summary", ""),
+            "parsed.experience": profile.get("experience", []),
+            "parsed.skills": profile.get("skills", [])
+        }}
+    )
+
+    return jsonify({"message": "Changes applied successfully"}), 200

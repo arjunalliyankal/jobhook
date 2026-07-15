@@ -69,10 +69,7 @@ def create_app(config_name="development"):
         return render_template("auth/register.html")
 
 
-    @app.route("/tracker")
-    def tracker():
-        from flask import render_template
-        return render_template("tracker/board.html")
+
 
     @app.route("/jobs")
     def jobs_view():

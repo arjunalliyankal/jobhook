@@ -23,9 +23,9 @@
 
             <a href="/jobs" id="nav-jobs" style="display: none;">Jobs</a>
             <a href="/courses" id="nav-courses" style="display: none;">Courses</a>
-            <a href="/ats" id="nav-ats" style="display: none;">ATS Score</a>
+            <a href="/ats" id="nav-ats" style="display: none;">ATS Enhancer</a>
             <a href="/cover-letter" id="nav-cover" style="display: none;">Cover Letter</a>
-            <a href="/tracker" id="nav-tracker" style="display: none;">Tracker</a>
+
             <a href="/auth/login" id="login-btn-nav" class="btn btn-outline" style="display: none;">Sign In</a>
             <button id="logout-btn" class="btn btn-outline" style="display: none;" onclick="logout()">Logout</button>
         </div>
@@ -53,8 +53,7 @@
                 "/jobs": "nav-jobs",
                 "/courses": "nav-courses",
                 "/ats": "nav-ats",
-                "/cover-letter": "nav-cover",
-                "/tracker": "nav-tracker",
+                "/cover-letter": "nav-cover"
             };
             for (const [prefix, id] of Object.entries(links)) {
                 if (path.startsWith(prefix)) {

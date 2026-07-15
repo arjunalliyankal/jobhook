@@ -266,7 +266,7 @@ def download_resume_pdf():
             company = ex.get("company", "")
             start = ex.get("start", "")
             end = ex.get("end", "Present")
-            story.append(Paragraph(f"{title} <font color='#94a3b8'>at {company}</font>", entry_title_style))
+            story.append(Paragraph(f"{title} <font color='#5F6B66'>at {company}</font>", entry_title_style))
             story.append(Paragraph(f"{start} — {end}", entry_meta_style))
             bullets = ex.get("bullets") or []
             if bullets:
@@ -283,7 +283,7 @@ def download_resume_pdf():
             company = i.get("company", "")
             start = i.get("start", "")
             end = i.get("end", "")
-            story.append(Paragraph(f"{title} <font color='#94a3b8'>at {company}</font>", entry_title_style))
+            story.append(Paragraph(f"{title} <font color='#5F6B66'>at {company}</font>", entry_title_style))
             if start or end:
                 story.append(Paragraph(f"{start} — {end}", entry_meta_style))
             bullets = i.get("bullets") or []

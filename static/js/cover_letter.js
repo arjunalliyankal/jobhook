@@ -38,15 +38,37 @@ document.addEventListener("DOMContentLoaded", async () => {
     async function loadResumes() {
         if (!resumeSelect) return;
         try {
-            const res = await API.get("/resume/");
+            const [res, userRes] = await Promise.all([
+                API.get("/resume/"),
+                API.get("/auth/me")
+            ]);
+            
             if (res && res.ok) {
                 const resumes = await res.json();
-                resumes.forEach(r => {
-                    const opt = document.createElement("option");
-                    opt.value = r._id;
-                    opt.textContent = r.parsed?.name || r.file_name;
-                    resumeSelect.appendChild(opt);
-                });
+                let activeResumeId = null;
+                
+                if (userRes && userRes.ok) {
+                    const userData = await userRes.json();
+                    activeResumeId = userData.active_resume_id?.$oid || userData.active_resume_id;
+                }
+                
+                // Clear the "Loading..." option
+                resumeSelect.innerHTML = "";
+
+                if (resumes.length === 0) {
+                    resumeSelect.innerHTML = `<option value="">No resumes — upload one first</option>`;
+                } else {
+                    resumes.forEach(r => {
+                        const opt = document.createElement("option");
+                        const rId = r._id?.$oid || r._id;
+                        opt.value = rId;
+                        opt.textContent = r.parsed?.name || r.file_name;
+                        if (activeResumeId && rId === activeResumeId) {
+                            opt.selected = true;
+                        }
+                        resumeSelect.appendChild(opt);
+                    });
+                }
             }
         } catch (e) {
             console.error("Failed to load resumes", e);
